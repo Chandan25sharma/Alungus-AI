@@ -1,0 +1,106 @@
+# === Node ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# === Next.js ===
+.next/
+out/
+.cache/
+.env
+.env.local
+.env.production
+.env.development
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.pkl
+*.h5
+*.pt
+*.pth
+*.ckpt
+
+# Jupyter / Colab
+.ipynb_checkpoints/
+*.ipynb
+colab_logs/
+colab_tmp/
+
+# === Model Files & Datasets ===
+models/
+weights/
+*.safetensors
+*.ckpt
+*.bin
+*.tflite
+*.onnx
+*.pth.tar
+*.pkl
+*.npz
+*.npy
+
+# Hugging Face Datasets & Transformers Cache
+~/.cache/huggingface/
+~/.huggingface/
+*.jsonl
+
+# === Public Assets ===
+public/generated/
+public/tmp/
+public/uploads/
+
+# === Logs & Debugging ===
+*.log
+*.out
+*.err
+debug.log
+log/
+logs/
+*.pid
+
+# === VSCode & IDEs ===
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === Mac & System Files ===
+.DS_Store
+Thumbs.db
+
+# === Docker (if used locally) ===
+docker-compose.override.yml
+*.dockerfile
+*.container
+
+# === Firebase/Auth Cache (if any) ===
+.firebase/
+.firebaserc
+.firebase-debug.log
+
+# === Google Colab Mount Cache ===
+/content/drive/
+gdrive/
+*.zip
+*.tar
+*.tar.gz
+
+# === Others ===
+dist/
+build/
+tmp/
+*.tmp
+*.bak
+*.swp
+*.swm
+
+# === Vercel ===
+.vercel/
+
+# === Local Environment Variables ===
+.env.local  
