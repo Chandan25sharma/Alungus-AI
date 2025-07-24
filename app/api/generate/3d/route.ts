@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         prompt: validatedData.prompt,
         settings: validatedData,
         generated_at: new Date().toISOString(),
-        user_id: session.user.id,
+        user_id: session.user.email || 'anonymous',
       }
     })
 

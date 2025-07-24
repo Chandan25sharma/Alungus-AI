@@ -6,13 +6,10 @@ import { z } from 'zod'
 const imageGenerationSchema = z.object({
   prompt: z.string().min(1, 'Prompt is required'),
   negative_prompt: z.string().optional(),
-  width: z.number().min(256).max(2048).default(1024),
-  height: z.number().min(256).max(2048).default(1024),
-  steps: z.number().min(1).max(100).default(30),
-  cfg_scale: z.number().min(1).max(30).default(7),
-  seed: z.number().optional(),
-  sampler: z.string().default('DPM++ 2M Karras'),
-  model: z.string().default('sdxl'),
+  width: z.number().min(256).max(1024).default(512),
+  height: z.number().min(256).max(1024).default(512),
+  guidance_scale: z.number().min(1).max(20).default(7.5),
+  num_inference_steps: z.number().min(1).max(50).default(20),
   style: z.enum(['anime', 'realistic', 'artistic', 'cinematic']).default('realistic'),
 })
 
@@ -27,45 +24,75 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = imageGenerationSchema.parse(body)
 
-    // Call to Google Colab Stable Diffusion endpoint
-    const colabResponse = await fetch(`${process.env.COLAB_API_BASE_URL}/api/sd/txt2img`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.COLAB_API_TOKEN}`,
-      },
-      body: JSON.stringify({
-        prompt: validatedData.prompt,
-        negative_prompt: validatedData.negative_prompt || 'blurry, low quality, distorted',
-        width: validatedData.width,
-        height: validatedData.height,
-        steps: validatedData.steps,
-        cfg_scale: validatedData.cfg_scale,
-        seed: validatedData.seed || -1,
-        sampler_name: validatedData.sampler,
-        model: validatedData.model,
-        style_preset: validatedData.style,
-      }),
-    })
-
-    if (!colabResponse.ok) {
-      throw new Error(`Colab API error: ${colabResponse.statusText}`)
+    const apiToken = process.env.HUGGINGFACE_API_TOKEN;
+    if (!apiToken) {
+      return NextResponse.json(
+        { error: 'HuggingFace API token not configured' },
+        { status: 500 }
+      );
     }
 
-    const result = await colabResponse.json()
+    // Enhanced prompt based on style
+    let enhancedPrompt = validatedData.prompt;
+    const stylePrompts = {
+      realistic: `photorealistic, highly detailed, professional photography, ${validatedData.prompt}`,
+      anime: `anime style, manga illustration, detailed artwork, ${validatedData.prompt}`,
+      artistic: `artistic painting, creative illustration, vibrant colors, ${validatedData.prompt}`,
+      cinematic: `cinematic shot, dramatic lighting, film photography, ${validatedData.prompt}`,
+    };
+    enhancedPrompt = stylePrompts[validatedData.style] || validatedData.prompt;
 
-    // Log generation for user history
-    // TODO: Save to MongoDB with user ID, prompt, settings, result URL
+    // Add negative prompt
+    if (validatedData.negative_prompt) {
+      enhancedPrompt += `. Negative: ${validatedData.negative_prompt}`;
+    }
+
+    // Use FLUX.1-dev model via HuggingFace Inference API
+    const response = await fetch(
+      'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: enhancedPrompt,
+          parameters: {
+            guidance_scale: validatedData.guidance_scale,
+            num_inference_steps: validatedData.num_inference_steps,
+            width: validatedData.width,
+            height: validatedData.height,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('HuggingFace API error:', errorText);
+      return NextResponse.json(
+        { error: 'Image generation failed', details: errorText },
+        { status: 500 }
+      );
+    }
+
+    // Get the image blob
+    const imageBlob = await response.blob();
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
     return NextResponse.json({
       success: true,
-      image_url: result.image_url,
-      generation_id: result.id,
+      image_url: `data:image/png;base64,${base64Image}`,
+      generation_id: `hf_${Date.now()}`,
       metadata: {
-        prompt: validatedData.prompt,
+        prompt: enhancedPrompt,
         settings: validatedData,
         generated_at: new Date().toISOString(),
-        user_id: session.user.id,
+        user_id: session.user.email || 'anonymous',
+        provider: 'huggingface',
+        model: 'FLUX.1-dev'
       }
     })
 

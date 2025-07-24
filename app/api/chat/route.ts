@@ -6,7 +6,7 @@ import { z } from 'zod'
 const chatSchema = z.object({
   message: z.string().min(1, 'Message is required'),
   conversation_id: z.string().optional(),
-  model: z.string().default('llama3'),
+  model: z.string().default('meta-llama/llama-3-8b-instruct:free'),
   temperature: z.number().min(0).max(2).default(0.7),
   max_tokens: z.number().min(1).max(4000).default(1000),
   system_prompt: z.string().optional(),
@@ -23,59 +23,68 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = chatSchema.parse(body)
 
-    // Try local Ollama first, fallback to Colab
-    let response
-    
-    try {
-      // Local Ollama endpoint
-      response = await fetch(`${process.env.OLLAMA_ENDPOINT}/api/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: validatedData.model,
-          prompt: validatedData.message,
-          system: validatedData.system_prompt,
-          options: {
-            temperature: validatedData.temperature,
-            num_predict: validatedData.max_tokens,
-          },
-          stream: false,
-        }),
-      })
-    } catch (error) {
-      // Fallback to Colab Ollama
-      response = await fetch(`${process.env.COLAB_API_BASE_URL}/api/ollama/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.COLAB_API_TOKEN}`,
-        },
-        body: JSON.stringify({
-          message: validatedData.message,
-          model: validatedData.model,
-          temperature: validatedData.temperature,
-          max_tokens: validatedData.max_tokens,
-          system_prompt: validatedData.system_prompt,
-        }),
-      })
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'OpenRouter API key not configured' },
+        { status: 500 }
+      );
     }
+
+    // Prepare messages array for OpenRouter
+    const messages = [];
+    
+    if (validatedData.system_prompt) {
+      messages.push({
+        role: 'system',
+        content: validatedData.system_prompt
+      });
+    }
+    
+    messages.push({
+      role: 'user',
+      content: validatedData.message
+    });
+
+    // Call OpenRouter API
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Alungus AI'
+      },
+      body: JSON.stringify({
+        model: validatedData.model,
+        messages: messages,
+        temperature: validatedData.temperature,
+        max_tokens: validatedData.max_tokens,
+      }),
+    });
 
     if (!response.ok) {
-      throw new Error(`Chat API error: ${response.statusText}`)
+      const errorText = await response.text();
+      console.error('OpenRouter API error:', errorText);
+      return NextResponse.json(
+        { error: 'Chat API failed', details: errorText },
+        { status: 500 }
+      );
     }
 
-    const result = await response.json()
+    const result = await response.json();
+    const chatMessage = result.choices?.[0]?.message?.content || 'No response generated';
 
     return NextResponse.json({
       success: true,
-      message: result.response || result.message,
+      message: chatMessage,
       conversation_id: validatedData.conversation_id || `conv_${Date.now()}`,
       metadata: {
         model: validatedData.model,
         generated_at: new Date().toISOString(),
-        user_id: session.user.id,
+        user_id: session.user.email || 'anonymous',
+        provider: 'openrouter',
+        usage: result.usage
       }
     })
 

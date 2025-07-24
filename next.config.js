@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -23,8 +20,9 @@ const nextConfig = {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
-    COLAB_API_BASE_URL: process.env.COLAB_API_BASE_URL,
-    COLAB_API_TOKEN: process.env.COLAB_API_TOKEN,
+    HUGGINGFACE_API_TOKEN: process.env.HUGGINGFACE_API_TOKEN,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
   },
   typescript: {
     ignoreBuildErrors: false,
