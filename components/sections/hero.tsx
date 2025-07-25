@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -16,12 +17,16 @@ export function Hero() {
           All powered by open-source models.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-white text-black hover:bg-gray-100">
-            Get Started Free
-          </Button>
-          <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-black">
-            View Demos
-          </Button>
+          <Link href="/auth/signup">
+            <Button size="lg" className="bg-white text-black hover:bg-gray-100">
+              Get Started Free
+            </Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-black">
+              View Demos
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
