@@ -4,6 +4,7 @@ import GitHubProvider from 'next-auth/providers/github'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
 import { MongoClient } from 'mongodb'
+
 import bcrypt from 'bcryptjs'
 
 // MongoDB client with SSL configuration
@@ -85,20 +86,19 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user }) {
+async jwt({ token, user }) {
   if (user) {
-    token.sub = user.id || (user as any)._id?.toString() || token.sub
+    token.sub = user.id || (user as any)._id?.toString() || token.sub;
+    token.id = user.id || (user as any)._id?.toString() || token.id;
   }
-  return token
-}
-
-  ,
-    async session({ session, token }: { session: any; token: { sub?: string } }) {
-      if (session.user && token.sub) {
-         session.user.id = token.sub
-      }
-      return session
-    },
+  return token;
+},
+async session({ session, token }) {
+  if (session.user && token.id) {
+    session.user.id = token.id as string;
+  }
+  return session;
+},
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',

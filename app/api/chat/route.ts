@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         model: validatedData.model,
         generated_at: new Date().toISOString(),
-        user_id: (session.user as any).id,
+        user_id: session.user.id,
         provider: 'openrouter',
         usage: result.usage
       }
