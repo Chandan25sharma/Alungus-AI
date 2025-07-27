@@ -103,3 +103,7 @@ async session({ session, token }) {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 }
+if (!process.env.NEXTAUTH_URL) throw new Error('Missing NEXTAUTH_URL')
+if (!process.env.NEXTAUTH_SECRET) throw new Error('Missing NEXTAUTH_SECRET')
+if (!process.env.MONGODB_URI) throw new Error('Missing MONGODB_URI')
+if (!process.env.GOOGLE_CLIENT_ID) throw new Error('Missing GOOGLE_CLIENT_ID')
