@@ -29,7 +29,7 @@ export default function SignIn() {
           </div>
           <CardTitle className="text-2xl text-white">Welcome to Alungus AI</CardTitle>
           <CardDescription className="text-white/80">
-            Sign in to start creating amazing content with AI
+            Sign in to  creating amazing content with AI
           </CardDescription>
         </CardHeader>
         
